@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Ported 1:1 from frontend/src/index.css — GOAT's real web app tokens.
+  Dark is the default/original palette; the light theme is an explicit
+  opt-in override, same as the web app. Chart colors are expressed as
+  RGB triplets here (vs. hex on web) only so NativeWind's <alpha-value>
+  substitution works the same way it does for the neutrals.
+*/
+:root {
+  --c-bg-base: 5 5 5;
+  --c-bg-surface: 10 10 10;
+  --c-bg-elevated: 13 13 13;
+  --c-bg-input: 8 8 8;
+  --c-bg-header: 15 15 15;
+  --c-text-primary: 245 245 245;
+  --c-text-secondary: 155 163 167;
+  --c-overlay: 255 255 255;
+  --c-chart-amber-rgb: 245 158 11;
+  --c-chart-green-rgb: 16 185 129;
+  --c-chart-blue-rgb: 59 130 246;
+  --c-chart-purple-rgb: 168 85 247;
+  --c-chart-teal-rgb: 20 184 166;
+}
