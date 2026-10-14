@@ -3,7 +3,10 @@ import { View, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, runOnJS, Easing } from 'react-native-reanimated';
 import { GoatMascotBackdrop } from '../components/GoatMascotBackdrop';
 import { LoginPanel } from '../features/auth/LoginPanel';
-import { WelcomePanel } from '../features/auth/WelcomePanel';
+import { AdminShell } from '../features/admin/AdminShell';
+import { AdminWelcomePanel } from '../features/auth/AdminWelcomePanel';
+import { StudentWelcomePanel } from '../features/auth/StudentWelcomePanel';
+import { StudentShell } from '../features/student/StudentShell';
 import { useAuth } from '../features/auth/AuthContext';
 
 type Phase = 'login' | 'exiting' | 'welcome';
@@ -15,10 +18,15 @@ type Phase = 'login' | 'exiting' | 'welcome';
  * the whole move happens around, per the confirmed design.
  */
 export function RootAuthScreen() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   // Reopening the app with a stored session skips straight to the welcome
   // panel, already settled — no replaying the login entrance/transition.
   const [phase, setPhase] = useState<Phase>(() => (status === 'signedIn' ? 'welcome' : 'login'));
+  const [adminIntroSeen, setAdminIntroSeen] = useState(false);
+  // Reopening the app with a stored session is a resume, not a login, so the
+  // stats intro is already "seen" and the shell takes over immediately. A
+  // fresh sign-in starts false and plays it.
+  const [studentIntroSeen, setStudentIntroSeen] = useState(status === 'signedIn');
   const formProgress = useSharedValue(status === 'signedIn' ? 1 : 0);
   // The plate is only a brief cut to hide the ugly mid-zoom moment — it must
   // fade back out afterward, or it permanently blacks out the mascot (which
@@ -34,6 +42,8 @@ export function RootAuthScreen() {
       plateOpacity.value = 0;
       welcomeProgress.value = 0;
       setPhase('login');
+      setAdminIntroSeen(false);
+      setStudentIntroSeen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
@@ -67,9 +77,17 @@ export function RootAuthScreen() {
     transform: [{ scale: 0.82 + welcomeProgress.value * 0.18 }],
   }));
 
+  // The admin tab shell is a much longer-lived, denser screen than the
+  // brief login/welcome moment, so its watermark sits dimmer once it takes
+  // over — same shared mascot instance, just retargeted, never remounted.
+  const inShell =
+    phase === 'welcome' &&
+    ((user?.role === 'admin' && adminIntroSeen) || (user?.role === 'student' && studentIntroSeen));
+  const mascotOpacity = inShell ? 0.12 : 0.28;
+
   return (
     <View style={styles.root}>
-      <GoatMascotBackdrop />
+      <GoatMascotBackdrop restOpacity={mascotOpacity} />
 
       {phase !== 'welcome' && (
         <Animated.View style={[StyleSheet.absoluteFill, formStyle]}>
@@ -83,7 +101,17 @@ export function RootAuthScreen() {
 
       {phase !== 'login' && (
         <Animated.View style={[StyleSheet.absoluteFill, welcomeStyle]}>
-          <WelcomePanel />
+          {user?.role === 'student' ? (
+            studentIntroSeen ? (
+              <StudentShell />
+            ) : (
+              <StudentWelcomePanel onContinue={() => setStudentIntroSeen(true)} />
+            )
+          ) : adminIntroSeen ? (
+            <AdminShell />
+          ) : (
+            <AdminWelcomePanel onContinue={() => setAdminIntroSeen(true)} />
+          )}
         </Animated.View>
       )}
     </View>
