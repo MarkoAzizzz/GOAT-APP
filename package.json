@@ -9,6 +9,7 @@
     "@expo/metro-runtime": "~57.0.15",
     "expo": "~57.0.19",
     "expo-constants": "~57.0.18",
+    "expo-dev-client": "~57.0.19",
     "expo-font": "~57.0.4",
     "expo-linear-gradient": "~57.0.2",
     "expo-secure-store": "~57.0.4",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^57.0.10",
+    "eas-cli": "^24.8.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
