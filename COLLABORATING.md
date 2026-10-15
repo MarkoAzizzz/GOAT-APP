@@ -3,6 +3,17 @@
 Everything needed to pull this repo and get the app running against a local
 backend.
 
+## Short version
+
+1. Accept the collaborator invite (this repo is private)
+2. Merge the `feature/leaderboard-ranking` PR into the backend's `master`
+3. `python manage.py migrate`
+4. Run the backend on `0.0.0.0:8000`, with your LAN IP in `ALLOWED_HOSTS`
+5. Clone this repo and `git checkout master`
+6. `npm install && npx expo start`, scan with Expo Go on the same Wi-Fi
+
+Steps 2–4 are in the backend repo; 5–6 are here. Details below.
+
 ## 1. Access
 
 This repo is **private**. You need to be added as a collaborator before you
@@ -10,15 +21,20 @@ can clone it, otherwise GitHub returns a 404 rather than a permissions error.
 
 ## 2. Clone the right branch
 
-The repo's default branch is `main`, but **all the work is on `master`**.
-`main` holds a single unrelated "Initial commit" and shares no history with
-`master`. Clone and switch:
+**`master` is the branch you want — not `main`, and no feature branch.**
+
+The repo's default branch is `main`, but it holds a single unrelated
+"Initial commit" and shares no history with `master`. Cloning and staying on
+`main` gives you an almost empty repo, which looks like the work is missing.
 
 ```bash
 git clone https://github.com/MarkoAzizzz/GOAT-APP.git
 cd GOAT-APP
 git checkout master
 ```
+
+Everything is on `master`: both apps, the shared components, and this guide.
+Nothing else needs pulling.
 
 ## 3. Backend first
 
@@ -31,8 +47,25 @@ scoring screens work against it as-is. One thing is still missing: the
 leaderboard has no `rank`, `previous_rank` or `student_uuid`, which the
 Board, the Home rank card and the student intro all read.
 
-That's in a separate PR: **`feature/leaderboard-ranking`** (one commit, five
-files, all inside `leaderboard/`). Merge it, then:
+That's in a separate PR from `MarkoAzizzz/GOAT-performance-system`, branch
+**`feature/leaderboard-ranking`** — one commit, five files, all inside
+`leaderboard/`.
+
+Merge it against **`master`**, not `main`: those two branches have unrelated
+histories in that repo too, and a PR opened against `main` shows 168 files
+instead of 5. The correct comparison is:
+
+```
+https://github.com/ahmedVq/GOAT-performance-system/compare/master...MarkoAzizzz:GOAT-performance-system:feature/leaderboard-ranking
+```
+
+It also repairs `leaderboard/tests.py`, which currently fails on `master` —
+all 6 tests error on `level_at_assessment`, a field an earlier migration
+already dropped. Measured: `master` is 16 failing of 78; with this branch,
+10 failing of 80. The remaining 10 are in analytics and one assessments
+test, pre-existing and untouched by this change.
+
+Then:
 
 ```bash
 python manage.py migrate
