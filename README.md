@@ -40,14 +40,53 @@ See `src/lib/api.ts` if you need to point at a different backend (e.g. a deploye
 
 ```
 src/
-  components/     Shared UI building blocks (GoatCard, GoatButton, StatRing, etc.)
+  components/      Shared UI: ConfirmModal, SignOutButton, mascot backdrop
   features/
-    auth/         Login flow: AuthContext, API calls, LoginPanel, WelcomePanel
+    auth/          Login, AuthContext, per-role welcome panels
+    admin/         Coach app: shell, tab bar, Home/Team/Score/Board/More
+    student/       Athlete app: shell, Home/Progress/Board/Profile
+    students/      Student API + admin-side profile screen
+    assessments/   Scoring API + assessment detail screen
+    leaderboard/   Leaderboard API
   lib/             API client, secure storage helpers
-  screens/         Top-level screens (RootAuthScreen, ComponentPreviewScreen)
+  screens/         RootAuthScreen (routes by role after login)
   theme/           Design tokens, fonts, light/dark theme provider
 assets/            Brand assets (mascot, wordmark) and app icons
 ```
+
+Login routes by role: `admin` gets `AdminShell`, `student` gets
+`StudentShell`. Both show a stats panel first, then tap through to the app.
+
+## Scoring model
+
+Coaches do not enter an absolute score. Each criterion takes a **delta from
+-3 to +3**, which the backend applies on top of that criterion's running
+**standing**. A `0` is a real result — "assessed, no change" — not a skipped
+field, so all 25 criteria are always submitted.
+
+Two scales are easy to confuse:
+
+| Value | Range |
+|---|---|
+| Criterion `effective_score` | 0–10 |
+| Criterion `delta` | −3 to +3 |
+| Pillar `standing_after` | roughly 0–100 (it aggregates its criteria) |
+| Student rating | open-ended, starts at 1000 |
+
+## Backend requirements
+
+This app needs backend changes that may not be on `main` of the backend repo
+yet — delta-based scoring (`CriterionScore.delta`, `PillarScore.standing_*`)
+and leaderboard `rank` / `previous_rank`, plus their migrations. Without
+them, scoring submits will fail and the board shows no ranks.
+
+## Android layout gotcha
+
+Rows in this codebase size their children with widths derived from
+`useWindowDimensions`, not `flex: 1` combined with `gap`. That pairing
+collapses row children to zero width on some Android builds — it made list
+text invisible and progress bars render as single dots. If you add a row with
+a fixed-width element beside flexible text, follow the existing pattern.
 
 ## Brand & design reference
 

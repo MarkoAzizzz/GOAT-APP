@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Image, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -36,6 +36,7 @@ export function GoatMascotBackdrop({ restOpacity = 0.28 }: GoatMascotBackdropPro
   const { width: windowWidth } = useWindowDimensions();
   const opacity = useSharedValue(0);
   const scale = useSharedValue(1.08);
+  const mounted = useRef(false);
 
   useEffect(() => {
     opacity.value = withTiming(restOpacity, { duration: 520, easing: Easing.bezier(0.16, 0.84, 0.44, 1) });
@@ -53,8 +54,18 @@ export function GoatMascotBackdrop({ restOpacity = 0.28 }: GoatMascotBackdropPro
         )
       )
     );
+    mounted.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Retarget opacity smoothly when the caller changes restOpacity after
+  // mount (e.g. the login/welcome mascot dimming further once the admin
+  // tab shell takes over) — the same shared instance, never remounted.
+  useEffect(() => {
+    if (!mounted.current) return;
+    opacity.value = withTiming(restOpacity, { duration: 420, easing: Easing.bezier(0.16, 0.84, 0.44, 1) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restOpacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
