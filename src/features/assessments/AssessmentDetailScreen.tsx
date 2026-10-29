@@ -355,7 +355,8 @@ export function AssessmentDetailScreen({ assessmentId, onBack }: AssessmentDetai
               <Pressable
                 key={p.pillar_name}
                 onPress={() => setOpenPillar(isOpen ? null : p.pillar_name)}
-                style={({ pressed }) => [styles.pillarRow, pressed && { opacity: 0.6 }]}
+                android_ripple={{ color: 'rgba(255,255,255,0.1)' }}
+                style={styles.pillarRow}
               >
                 <View style={styles.pillarTopRow}>
                   <Text style={styles.pillarIndex}>{String(i + 1).padStart(2, '0')}</Text>

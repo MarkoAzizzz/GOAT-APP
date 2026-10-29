@@ -32,7 +32,8 @@ export function SignOutButton() {
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel="Sign out"
-          style={({ pressed }) => [styles.button, pressed && { opacity: 0.6 }]}
+          android_ripple={{ color: 'rgba(225,25,25,0.25)', borderless: true }}
+          style={styles.button}
         >
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />

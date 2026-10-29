@@ -6,6 +6,7 @@ import { Easing } from 'react-native-reanimated';
 import { fonts } from '../../theme/fonts';
 import { StudentSelf } from './useStudentSelf';
 import { SIGN_OUT_CLEARANCE } from '../../components/SignOutButton';
+import { PackageBanner } from '../packages/PackageBanner';
 
 const RISE_EASING = Easing.bezier(0.16, 0.84, 0.44, 1);
 const RED = '#E11919';
@@ -95,6 +96,9 @@ export function StudentHomeTab({ self }: { self: StudentSelf }) {
       </MotiView>
 
       <View style={styles.body}>
+        {/* Above the streak: running out of sessions outranks a streak. */}
+        <PackageBanner sessionPackage={self.sessionPackage} />
+
         {streak > 0 ? (
           <MotiView {...rise(60)} style={styles.streakCard}>
             <View style={styles.streakBadge}>

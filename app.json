@@ -11,6 +11,7 @@
     },
     "android": {
       "package": "com.goatacademy.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -24,7 +25,13 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#E11919"
+        }
+      ]
     ],
     "extra": {
       "eas": {

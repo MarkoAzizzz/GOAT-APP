@@ -258,7 +258,8 @@ export function StudentProfileScreen({ studentId, onBack, onNewAssessment }: Stu
                   <Pressable
                     key={h.id}
                     onPress={() => setOpenAssessmentId(h.id)}
-                    style={({ pressed }) => [styles.historyRow, pressed && { opacity: 0.7 }]}
+                    android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+                    style={styles.historyRow}
                   >
                     <View
                       style={[

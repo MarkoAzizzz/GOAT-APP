@@ -8,6 +8,7 @@ import {
   AssessmentHistoryEntry,
 } from '../students/studentsService';
 import { getLeaderboard, LeaderboardEntry } from '../leaderboard/leaderboardService';
+import { getMyPackage, SessionPackage } from '../packages/packagesService';
 
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
@@ -45,6 +46,8 @@ export type StudentSelf = {
   progress: StudentProgress | null;
   /** This student's own leaderboard row — null if they've never been ranked. */
   entry: LeaderboardEntry | null;
+  /** Current session package — null if they've never been given one. */
+  sessionPackage: SessionPackage | null;
   streak: number;
   loading: boolean;
   failed: boolean;
@@ -60,6 +63,7 @@ export function useStudentSelf(): StudentSelf {
   const [student, setStudent] = useState<Student | null>(null);
   const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [entry, setEntry] = useState<LeaderboardEntry | null>(null);
+  const [sessionPackage, setSessionPackage] = useState<SessionPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -74,13 +78,18 @@ export function useStudentSelf(): StudentSelf {
         if (cancelled) return;
         setStudent(me);
 
-        const [p, board] = await Promise.all([
+        // Leaderboard and package failures are tolerated: a student with no
+        // assessments has no row, and one who's never been given a package
+        // has no balance. Neither should blank the whole screen.
+        const [p, board, pkg] = await Promise.all([
           getStudentProgress(accessToken, me.id),
           getLeaderboard(accessToken).catch(() => [] as LeaderboardEntry[]),
+          getMyPackage(accessToken).catch(() => null),
         ]);
         if (cancelled) return;
         setProgress(p);
         setEntry(board.find((b) => b.student_uuid === me.id) ?? null);
+        setSessionPackage(pkg);
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -98,6 +107,7 @@ export function useStudentSelf(): StudentSelf {
     student,
     progress,
     entry,
+    sessionPackage,
     streak: deriveStreak(progress?.history ?? []),
     loading,
     failed,

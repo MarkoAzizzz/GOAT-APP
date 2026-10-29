@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48162851808",
+    "project_id": "goat-app-aca30",
+    "storage_bucket": "goat-app-aca30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48162851808:android:f88f7bb70231355c55f985",
+        "android_client_info": {
+          "package_name": "com.goatacademy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdEEQiFiPM10n0QsnGMcGubmayXJnpJk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

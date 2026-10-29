@@ -87,6 +87,11 @@ export async function apiPost<T>(path: string, body: unknown, accessToken?: stri
   return handleResponse<T>(response);
 }
 
+export async function apiDelete<T>(path: string, accessToken?: string): Promise<T> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, { method: 'DELETE' }, accessToken);
+  return handleResponse<T>(response);
+}
+
 export async function apiGet<T>(
   path: string,
   accessToken?: string,

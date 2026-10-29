@@ -40,5 +40,13 @@ yarn-error.*
 /ios
 /android
 
+# The adminsdk key is a real secret — it can send push as this project and
+# must never be committed.
+*-adminsdk-*.json
+
+# google-services.json is deliberately NOT ignored. It is not a secret (it
+# ships inside the APK), and EAS Build only uploads git-tracked files —
+# ignoring it fails the Android build with MISSING_GOOGLE_SERVICES_JSON.
+
 # local tooling config (machine-specific paths)
 .claude/

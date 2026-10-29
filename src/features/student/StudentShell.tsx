@@ -12,6 +12,7 @@ import { StudentProfileTab } from './StudentProfileTab';
 import { SignOutButton } from '../../components/SignOutButton';
 import { STUDENT_TABS, StudentTabKey } from './studentTabIcons';
 import { useStudentSelf } from './useStudentSelf';
+import { usePushRegistration } from '../packages/usePushRegistration';
 
 const SLIDE_EASING = Easing.bezier(0.2, 0.8, 0.2, 1);
 
@@ -25,6 +26,9 @@ const SLIDE_EASING = Easing.bezier(0.2, 0.8, 0.2, 1);
 export function StudentShell() {
   const insets = useSafeAreaInsets();
   const self = useStudentSelf();
+  // Students are the only ones who receive package alerts, so the device is
+  // registered here rather than at the app root.
+  usePushRegistration();
   const [tab, setTab] = useState<StudentTabKey>('home');
   const [renderKey, setRenderKey] = useState(0);
   const prevIndexRef = useRef(0);
