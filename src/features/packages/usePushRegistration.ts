@@ -49,7 +49,10 @@ export function usePushRegistration() {
           const asked = await Notifications.requestPermissionsAsync();
           granted = asked.granted;
         }
-        if (!granted || cancelled) return;
+        if (!granted || cancelled) {
+          if (__DEV__) console.warn('[push] not registering — permission not granted', existing);
+          return;
+        }
 
         if (Platform.OS === 'android') {
           // Android needs a channel before anything will display.
@@ -62,14 +65,23 @@ export function usePushRegistration() {
 
         const projectId =
           Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-        if (!projectId) return;
+        if (!projectId) {
+          if (__DEV__) console.warn('[push] not registering — no eas projectId found');
+          return;
+        }
 
         const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-        if (!token || cancelled) return;
+        if (!token || cancelled) {
+          if (__DEV__) console.warn('[push] getExpoPushTokenAsync returned no token');
+          return;
+        }
 
+        if (__DEV__) console.warn('[push] got token, registering with backend:', token);
         await registerPushToken(accessToken, token);
-      } catch {
+        if (__DEV__) console.warn('[push] registered successfully');
+      } catch (e) {
         // Push is best-effort; never block the app on it.
+        if (__DEV__) console.warn('[push] registration threw:', e);
       }
     })();
 

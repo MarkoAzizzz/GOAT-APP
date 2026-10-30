@@ -34,8 +34,19 @@ export class ApiError extends Error {
   }
 }
 
+/** DRF validation errors are `{ field: ["reason", ...] }` or `{ field: "reason" }` — the
+ * first one found is far more useful than the generic top-level message wrapping it. */
+function firstErrorDetail(errors: unknown): string | null {
+  if (!errors || typeof errors !== 'object') return null;
+  for (const value of Object.values(errors as Record<string, unknown>)) {
+    if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+    if (typeof value === 'string') return value;
+  }
+  return null;
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
-  let json: ApiEnvelope<T> | { message?: string } | null = null;
+  let json: ApiEnvelope<T> | { message?: string; errors?: unknown } | null = null;
   try {
     json = await response.json();
   } catch {
@@ -43,7 +54,9 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
-    const message = (json && 'message' in json && json.message) || response.statusText || 'Request failed';
+    const detail = json && 'errors' in json ? firstErrorDetail(json.errors) : null;
+    const message =
+      detail || (json && 'message' in json && json.message) || response.statusText || 'Request failed';
     throw new ApiError(message, response.status);
   }
 
@@ -82,6 +95,15 @@ export async function apiPost<T>(path: string, body: unknown, accessToken?: stri
   const response = await fetchWithRefresh(
     `${API_BASE_URL}${path}`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    accessToken
+  );
+  return handleResponse<T>(response);
+}
+
+export async function apiPatch<T>(path: string, body: unknown, accessToken?: string): Promise<T> {
+  const response = await fetchWithRefresh(
+    `${API_BASE_URL}${path}`,
+    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
     accessToken
   );
   return handleResponse<T>(response);
