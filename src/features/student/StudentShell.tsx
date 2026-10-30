@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { AdminTabBar } from '../admin/AdminTabBar';
-import { ComingSoonTab } from '../admin/ComingSoonTab';
 import { StudentHomeTab } from './StudentHomeTab';
 import { StudentProgressTab } from './StudentProgressTab';
 import { StudentBoardTab } from './StudentBoardTab';
 import { StudentProfileTab } from './StudentProfileTab';
+import { StudentHistoryTab } from './StudentHistoryTab';
 import { SignOutButton } from '../../components/SignOutButton';
 import { STUDENT_TABS, StudentTabKey } from './studentTabIcons';
 import { useStudentSelf } from './useStudentSelf';
@@ -53,8 +53,8 @@ export function StudentShell() {
         return <StudentBoardTab self={self} />;
       case 'profile':
         return <StudentProfileTab self={self} />;
-      case 'more':
-        return <ComingSoonTab title="More" />;
+      case 'history':
+        return <StudentHistoryTab />;
     }
   };
 

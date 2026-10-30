@@ -65,6 +65,20 @@ export function getMyPackage(accessToken: string): Promise<SessionPackage | null
   return apiGet<SessionPackage | null>('/packages/me/', accessToken);
 }
 
+/** Every package the signed-in student has ever had, newest first. */
+export function getMyPackageHistory(accessToken: string): Promise<SessionPackage[]> {
+  return apiGet<SessionPackage[]>('/packages/me/history/', accessToken);
+}
+
+/** Admin lookup: every package a given student has ever had — works for
+ * deactivated students too. */
+export function getStudentPackageHistory(
+  accessToken: string,
+  studentUuid: string
+): Promise<SessionPackage[]> {
+  return apiGet<SessionPackage[]>(`/packages/${studentUuid}/history/`, accessToken);
+}
+
 /** Registering the same token again is a no-op server-side. */
 export function registerPushToken(accessToken: string, token: string): Promise<unknown> {
   return apiPost('/packages/push-token/', { token }, accessToken);

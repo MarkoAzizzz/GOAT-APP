@@ -14,6 +14,7 @@ import { Easing } from 'react-native-reanimated';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../../lib/api';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import {
   getCheckInRoster,
   checkInStudent,
@@ -89,6 +90,9 @@ export function CheckInScreen({ onBack }: CheckInScreenProps) {
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [undo, setUndo] = useState<UndoState>(null);
+  // Assigning sends the student a push, so it confirms first — a mis-tapped
+  // 8 corrected to 12 would otherwise notify them twice.
+  const [pendingAssign, setPendingAssign] = useState<{ row: CheckInRow; size: 8 | 12 } | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const contentWidth = windowWidth - 48;
@@ -230,7 +234,7 @@ export function CheckInScreen({ onBack }: CheckInScreenProps) {
             <View style={styles.renewRow}>
               <Text style={styles.renewPrompt}>New package:</Text>
               <Pressable
-                onPress={() => handleAssign(item, 8)}
+                onPress={() => setPendingAssign({ row: item, size: 8 })}
                 disabled={isBusy}
                 android_ripple={RIPPLE}
                 style={styles.sizeButton}
@@ -238,7 +242,7 @@ export function CheckInScreen({ onBack }: CheckInScreenProps) {
                 <Text style={styles.sizeLabel}>8</Text>
               </Pressable>
               <Pressable
-                onPress={() => handleAssign(item, 12)}
+                onPress={() => setPendingAssign({ row: item, size: 12 })}
                 disabled={isBusy}
                 android_ripple={RIPPLE}
                 style={styles.sizeButton}
@@ -349,6 +353,26 @@ export function CheckInScreen({ onBack }: CheckInScreenProps) {
           </Pressable>
         </MotiView>
       ) : null}
+
+      <ConfirmModal
+        visible={pendingAssign !== null}
+        title={`${pendingAssign?.size ?? ''} sessions?`}
+        message={
+          pendingAssign
+            ? `${pendingAssign.row.student_name} will be notified that ${pendingAssign.size} sessions have been added.` +
+              (pendingAssign.row.has_package
+                ? ' Any sessions left on their current package will not carry over.'
+                : '')
+            : ''
+        }
+        confirmLabel="Assign"
+        onConfirm={() => {
+          const target = pendingAssign;
+          setPendingAssign(null);
+          if (target) handleAssign(target.row, target.size);
+        }}
+        onCancel={() => setPendingAssign(null)}
+      />
     </View>
   );
 }

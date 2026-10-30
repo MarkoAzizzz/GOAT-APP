@@ -7,7 +7,7 @@ export const STUDENT_TAB_ICON_PATHS = [
   'M3 3v18h18M7 15l4-5 3 3 5-7',
   'M7 4h10v5a5 5 0 0 1-10 0zM7 6H5a2 2 0 0 0 0 4h2M17 6h2a2 2 0 0 1 0 4h-2M10 18h4M12 14v4M9 21h6',
   'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
-  'M4 6h16M4 12h16M4 18h16',
+  'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l4 2',
 ];
 
 export const STUDENT_TABS = [
@@ -15,7 +15,7 @@ export const STUDENT_TABS = [
   { key: 'progress', label: 'Progress', icon: STUDENT_TAB_ICON_PATHS[1] },
   { key: 'board', label: 'Board', icon: STUDENT_TAB_ICON_PATHS[2] },
   { key: 'profile', label: 'Profile', icon: STUDENT_TAB_ICON_PATHS[3] },
-  { key: 'more', label: 'More', icon: STUDENT_TAB_ICON_PATHS[4] },
+  { key: 'history', label: 'History', icon: STUDENT_TAB_ICON_PATHS[4] },
 ] as const;
 
 export type StudentTabKey = (typeof STUDENT_TABS)[number]['key'];
