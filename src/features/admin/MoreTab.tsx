@@ -6,6 +6,10 @@ import Svg, { Path } from 'react-native-svg';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
 import { CheckInScreen } from '../packages/CheckInScreen';
+import { BranchesScreen } from './BranchesScreen';
+import { AnalyticsScreen } from './AnalyticsScreen';
+import { AdminHistoryScreen } from './AdminHistoryScreen';
+import { SettingsScreen } from './SettingsScreen';
 import { SIGN_OUT_CLEARANCE } from '../../components/SignOutButton';
 
 const RED = '#E11919';
@@ -13,18 +17,21 @@ const RED = '#E11919';
 // the same navigation language rather than a separate effect.
 const PUSH_EASING = Easing.bezier(0.2, 0.8, 0.2, 1);
 
+type Screen = 'menu' | 'check-in' | 'history' | 'branches' | 'analytics' | 'settings';
+
 export function MoreTab() {
   const { logout } = useAuth();
   const { width: windowWidth } = useWindowDimensions();
-  const [screen, setScreen] = useState<'menu' | 'check-in'>('menu');
+  const [screen, setScreen] = useState<Screen>('menu');
 
   // container 24*2 padding, row 16*2 padding, 38 icon + 14 gap, 18 chevron + 12 gap
   const menuTextWidth = windowWidth - 48 - 32 - 52 - 30;
 
-  // A push, not a route change: the check-in panel slides in from the right
-  // over the menu while the tab bar stays put, so the coach can jump straight
-  // to another tab without backing out first.
-  if (screen === 'check-in') {
+  // A push, not a route change: the panel slides in from the right over the
+  // menu while the tab bar stays put, so the coach can jump straight to
+  // another tab without backing out first.
+  if (screen !== 'menu') {
+    const onBack = () => setScreen('menu');
     return (
       <MotiView
         from={{ translateX: windowWidth }}
@@ -32,7 +39,17 @@ export function MoreTab() {
         transition={{ type: 'timing', duration: 320, easing: PUSH_EASING }}
         style={styles.pushed}
       >
-        <CheckInScreen onBack={() => setScreen('menu')} />
+        {screen === 'check-in' ? (
+          <CheckInScreen onBack={onBack} />
+        ) : screen === 'history' ? (
+          <AdminHistoryScreen onBack={onBack} />
+        ) : screen === 'branches' ? (
+          <BranchesScreen onBack={onBack} />
+        ) : screen === 'analytics' ? (
+          <AnalyticsScreen onBack={onBack} />
+        ) : (
+          <SettingsScreen onBack={onBack} />
+        )}
       </MotiView>
     );
   }
@@ -82,7 +99,141 @@ export function MoreTab() {
         </Pressable>
       </MotiView>
 
-      <Text style={styles.note}>Analytics, branches and settings coming soon</Text>
+      <MotiView
+        from={{ opacity: 0, translateY: 22 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 80 }}
+      >
+        <Pressable
+          onPress={() => setScreen('history')}
+          android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+          style={styles.menuRow}
+        >
+          <View style={styles.menuIcon}>
+            <Svg
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={RED}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l4 2" />
+            </Svg>
+          </View>
+          <View style={[styles.menuText, { width: menuTextWidth }]}>
+            <Text style={styles.menuLabel}>History</Text>
+            <Text style={styles.menuSub} numberOfLines={1}>
+              Per-student attendance and packages
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </MotiView>
+
+      <MotiView
+        from={{ opacity: 0, translateY: 22 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 120 }}
+      >
+        <Pressable
+          onPress={() => setScreen('branches')}
+          android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+          style={styles.menuRow}
+        >
+          <View style={styles.menuIcon}>
+            <Svg
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={RED}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M12 21s-7-7.5-7-12a7 7 0 0 1 14 0c0 4.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+            </Svg>
+          </View>
+          <View style={[styles.menuText, { width: menuTextWidth }]}>
+            <Text style={styles.menuLabel}>Branches</Text>
+            <Text style={styles.menuSub} numberOfLines={1}>
+              Locations and rosters
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </MotiView>
+
+      <MotiView
+        from={{ opacity: 0, translateY: 22 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 140 }}
+      >
+        <Pressable
+          onPress={() => setScreen('analytics')}
+          android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+          style={styles.menuRow}
+        >
+          <View style={styles.menuIcon}>
+            <Svg
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={RED}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M3 3v18h18M7 16v-4m5 4V8m5 8v-7" />
+            </Svg>
+          </View>
+          <View style={[styles.menuText, { width: menuTextWidth }]}>
+            <Text style={styles.menuLabel}>Analytics</Text>
+            <Text style={styles.menuSub} numberOfLines={1}>
+              Boxing vs kickboxing progress
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </MotiView>
+
+      <MotiView
+        from={{ opacity: 0, translateY: 22 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 320, delay: 180 }}
+      >
+        <Pressable
+          onPress={() => setScreen('settings')}
+          android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
+          style={styles.menuRow}
+        >
+          <View style={styles.menuIcon}>
+            <Svg
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={RED}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M10.3 2.5h3.4l.6 2.4a7.6 7.6 0 0 1 2 1.2l2.4-.8 1.7 3 -1.8 1.7a7.6 7.6 0 0 1 0 2.3l1.8 1.7-1.7 3-2.4-.8a7.6 7.6 0 0 1-2 1.2l-.6 2.4h-3.4l-.6-2.4a7.6 7.6 0 0 1-2-1.2l-2.4.8-1.7-3 1.8-1.7a7.6 7.6 0 0 1 0-2.3L3.9 8.3l1.7-3 2.4.8a7.6 7.6 0 0 1 2-1.2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+            </Svg>
+          </View>
+          <View style={[styles.menuText, { width: menuTextWidth }]}>
+            <Text style={styles.menuLabel}>Settings</Text>
+            <Text style={styles.menuSub} numberOfLines={1}>
+              Account, password, app info
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </MotiView>
 
       <Pressable onPress={logout} style={styles.signOut}>
         <Text style={styles.signOutLabel}>Sign out</Text>
@@ -122,8 +273,6 @@ const styles = StyleSheet.create({
   menuLabel: { fontFamily: fonts.bodySemiBold, fontSize: 15, color: '#F5F5F5' },
   menuSub: { fontFamily: fonts.body, fontSize: 12.5, color: '#9BA3A7', marginTop: 2 },
   chevron: { fontFamily: fonts.mono, fontSize: 18, color: '#9BA3A7', marginLeft: 12 },
-
-  note: { fontFamily: fonts.body, fontSize: 12.5, color: '#5C6266' },
 
   signOut: {
     marginTop: 'auto',
