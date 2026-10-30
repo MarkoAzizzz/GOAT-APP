@@ -114,3 +114,35 @@ export type AssessmentDetail = {
 export function getAssessment(accessToken: string, assessmentId: string): Promise<AssessmentDetail> {
   return apiGet<AssessmentDetail>(`/assessments/${assessmentId}/`, accessToken);
 }
+
+export type MostImprovedEntry = {
+  student_id: string;
+  student_name: string;
+  /** current rating - the 1000 baseline every student starts at. */
+  gain: number;
+};
+
+export type PillarStrength = {
+  pillar_name: string;
+  /** Average standing across each rated student's latest assessment. Null
+   * if nobody in this sport has a points-based pillar score yet. */
+  average: number | null;
+};
+
+export type SportAnalytics = {
+  total_members: number;
+  assessed_this_month: number;
+  average_rating: number | null;
+  average_lifetime_gain: number | null;
+  most_improved: MostImprovedEntry[];
+  pillar_strength: PillarStrength[];
+};
+
+export type SportAnalyticsResponse = {
+  boxing: SportAnalytics;
+  kickboxing: SportAnalytics;
+};
+
+export function getSportAnalytics(accessToken: string): Promise<SportAnalyticsResponse> {
+  return apiGet<SportAnalyticsResponse>('/assessments/analytics/', accessToken);
+}
