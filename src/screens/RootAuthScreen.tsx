@@ -22,11 +22,11 @@ export function RootAuthScreen() {
   // Reopening the app with a stored session skips straight to the welcome
   // panel, already settled — no replaying the login entrance/transition.
   const [phase, setPhase] = useState<Phase>(() => (status === 'signedIn' ? 'welcome' : 'login'));
+  // Both start false unconditionally — admin and student alike see their
+  // welcome/stats screen on every app open, resumed session or fresh login,
+  // right up until they explicitly sign out.
   const [adminIntroSeen, setAdminIntroSeen] = useState(false);
-  // Reopening the app with a stored session is a resume, not a login, so the
-  // stats intro is already "seen" and the shell takes over immediately. A
-  // fresh sign-in starts false and plays it.
-  const [studentIntroSeen, setStudentIntroSeen] = useState(status === 'signedIn');
+  const [studentIntroSeen, setStudentIntroSeen] = useState(false);
   const formProgress = useSharedValue(status === 'signedIn' ? 1 : 0);
   // The plate is only a brief cut to hide the ugly mid-zoom moment — it must
   // fade back out afterward, or it permanently blacks out the mascot (which

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Image, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 import { MotiView } from 'moti';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, Easing } from 'react-native-reanimated';
@@ -32,31 +32,9 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
   const [pwFocused, setPwFocused] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [showReset, setShowReset] = useState(false);
-  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const buttonScale = useSharedValue(1);
   const progressWidth = useSharedValue(0);
-  const bannerY = useSharedValue(-1);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimer.current) clearTimeout(resetTimer.current);
-    };
-  }, []);
-
-  const openReset = () => {
-    setShowReset(true);
-    bannerY.value = withTiming(0, { duration: 300, easing: RISE_EASING });
-    if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(closeReset, 4000);
-  };
-
-  const closeReset = () => {
-    bannerY.value = withTiming(-1, { duration: 220, easing: Easing.in(Easing.ease) });
-    setTimeout(() => setShowReset(false), 220);
-    if (resetTimer.current) clearTimeout(resetTimer.current);
-  };
 
   const handleSubmit = async () => {
     if (phase === 'loading') return;
@@ -77,7 +55,6 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: buttonScale.value }] }));
   const progressStyle = useAnimatedStyle(() => ({ width: `${progressWidth.value * 100}%` }));
-  const bannerStyle = useAnimatedStyle(() => ({ transform: [{ translateY: bannerY.value * 130 }] }));
 
   const isLoading = phase === 'loading';
 
@@ -145,27 +122,7 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
           </Animated.View>
           {phase === 'error' && <Text style={styles.errorText}>{errorMessage}</Text>}
         </MotiView>
-
-        <MotiView {...rise(1640, 320)} style={{ alignItems: 'center', marginTop: 8 }}>
-          <Pressable onPress={openReset} hitSlop={8}>
-            <Text style={styles.link}>Forgot password?</Text>
-          </Pressable>
-        </MotiView>
       </View>
-
-      {showReset && (
-        <Animated.View style={[styles.resetBanner, bannerStyle]}>
-          <Pressable onPress={closeReset} style={styles.resetContent}>
-            <View style={{ flex: 1, gap: 6 }}>
-              <Text style={styles.resetTitle}>Locked out?</Text>
-              <Text style={styles.resetBody}>Contact your admin. They'll reset it for you.</Text>
-            </View>
-            <Pressable onPress={closeReset} style={styles.resetClose} hitSlop={8}>
-              <Text style={styles.resetCloseLabel}>×</Text>
-            </Pressable>
-          </Pressable>
-        </Animated.View>
-      )}
     </KeyboardAvoidingView>
   );
 }
@@ -248,35 +205,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#f04a4a',
   },
-  link: { fontFamily: fonts.bodyMedium, fontSize: 15, color: '#9BA3A7' },
-  resetBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#101010',
-    borderBottomWidth: 2,
-    borderBottomColor: '#E11919',
-    paddingTop: 64,
-    paddingHorizontal: 28,
-    paddingBottom: 20,
-  },
-  resetContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
-  resetTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 12,
-    letterSpacing: 2.8,
-    color: '#E11919',
-    textTransform: 'uppercase',
-  },
-  resetBody: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: '#F5F5F5' },
-  resetClose: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetCloseLabel: { fontFamily: fonts.mono, fontSize: 15, color: '#9BA3A7' },
 });
