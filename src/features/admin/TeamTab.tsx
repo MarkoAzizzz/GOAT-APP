@@ -4,7 +4,7 @@ import { MotiView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
-import { getStudents, Student } from '../students/studentsService';
+import { getStudents, getBranches, Student, Branch } from '../students/studentsService';
 import { AddStudentForm } from '../students/AddStudentForm';
 import { SIGN_OUT_CLEARANCE } from '../../components/SignOutButton';
 
@@ -50,9 +50,11 @@ type TeamTabProps = {
 export function TeamTab({ onSelectStudent }: TeamTabProps) {
   const { accessToken } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [branchFilter, setBranchFilter] = useState<string>('all');
   const [showAddForm, setShowAddForm] = useState(false);
 
   const loadStudents = () => {
@@ -66,6 +68,16 @@ export function TeamTab({ onSelectStudent }: TeamTabProps) {
 
   useEffect(loadStudents, [accessToken]);
 
+  // Re-fetched every time this tab mounts (AdminShell remounts tabs fresh on
+  // each navigation), so a branch added from More > Branches shows up here
+  // without any extra wiring between the two screens.
+  useEffect(() => {
+    if (!accessToken) return;
+    getBranches(accessToken)
+      .then(setBranches)
+      .catch(() => setBranches([]));
+  }, [accessToken]);
+
   const activeCount = useMemo(() => students.filter((s) => s.is_active).length, [students]);
 
   const filtered = useMemo(() => {
@@ -74,10 +86,11 @@ export function TeamTab({ onSelectStudent }: TeamTabProps) {
       if (filter === 'boxing' && s.sport !== 'boxing') return false;
       if (filter === 'kickboxing' && s.sport !== 'kickboxing') return false;
       if (filter === 'inactive' && s.is_active) return false;
+      if (branchFilter !== 'all' && s.branch !== branchFilter) return false;
       if (q && !s.full_name.toLowerCase().includes(q) && !s.student_id.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [students, query, filter]);
+  }, [students, query, filter, branchFilter]);
 
   if (showAddForm) {
     return (
@@ -125,6 +138,30 @@ export function TeamTab({ onSelectStudent }: TeamTabProps) {
         ))}
       </MotiView>
 
+      {branches.length > 1 ? (
+        <MotiView {...rise(110)} style={styles.chipRow}>
+          <Pressable
+            onPress={() => setBranchFilter('all')}
+            style={[styles.chip, branchFilter === 'all' && styles.chipActive]}
+          >
+            <Text style={[styles.chipLabel, branchFilter === 'all' && styles.chipLabelActive]}>
+              All branches
+            </Text>
+          </Pressable>
+          {branches.map((b) => (
+            <Pressable
+              key={b.id}
+              onPress={() => setBranchFilter(b.id)}
+              style={[styles.chip, branchFilter === b.id && styles.chipActive]}
+            >
+              <Text style={[styles.chipLabel, branchFilter === b.id && styles.chipLabelActive]}>
+                {b.name}
+              </Text>
+            </Pressable>
+          ))}
+        </MotiView>
+      ) : null}
+
       {loading ? (
         <View style={styles.centerFill}>
           <ActivityIndicator color="#E11919" />
@@ -148,7 +185,10 @@ export function TeamTab({ onSelectStudent }: TeamTabProps) {
                 </View>
                 <View style={styles.identity}>
                   <Text style={styles.name} numberOfLines={1}>{item.full_name}</Text>
-                  <Text style={styles.meta} numberOfLines={1}>{item.student_id} · {item.sport}</Text>
+                  <Text style={styles.meta} numberOfLines={1}>
+                    {item.student_id} · {item.sport}
+                    {branches.length > 1 ? ` · ${item.branch_name}` : ''}
+                  </Text>
                 </View>
                 <View style={styles.rowStats}>
                   <Text style={styles.rating} numberOfLines={1}>
