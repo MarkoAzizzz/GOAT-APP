@@ -6,8 +6,16 @@ import { Easing } from 'react-native-reanimated';
 import Svg, { Polyline, Circle } from 'react-native-svg';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
-import { getStudent, getStudentProgress, Student, StudentProgress } from './studentsService';
+import {
+  getStudent,
+  getStudentProgress,
+  deactivateStudent,
+  reactivateStudent,
+  Student,
+  StudentProgress,
+} from './studentsService';
 import { AssessmentDetailScreen } from '../assessments/AssessmentDetailScreen';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 const RISE_EASING = Easing.bezier(0.16, 0.84, 0.44, 1);
 
@@ -106,6 +114,31 @@ export function StudentProfileScreen({ studentId, onBack, onNewAssessment }: Stu
   // Opening an assessment is kept here rather than in AdminShell so that
   // backing out of it returns to this profile, scroll position intact.
   const [openAssessmentId, setOpenAssessmentId] = useState<string | null>(null);
+  const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+
+  const handleDeactivate = async () => {
+    if (!accessToken) return;
+    setStatusBusy(true);
+    try {
+      await deactivateStudent(accessToken, studentId);
+      setStudent((prev) => (prev ? { ...prev, is_active: false } : prev));
+    } finally {
+      setStatusBusy(false);
+      setConfirmingDeactivate(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!accessToken) return;
+    setStatusBusy(true);
+    try {
+      const updated = await reactivateStudent(accessToken, studentId);
+      setStudent(updated);
+    } finally {
+      setStatusBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!accessToken) return;
@@ -212,6 +245,28 @@ export function StudentProfileScreen({ studentId, onBack, onNewAssessment }: Stu
                 </Text>
               </View>
             </View>
+
+            <View style={styles.statusRow}>
+              {student.is_active ? (
+                <Pressable
+                  onPress={() => setConfirmingDeactivate(true)}
+                  disabled={statusBusy}
+                  style={[styles.statusButton, statusBusy && { opacity: 0.5 }]}
+                >
+                  <Text style={styles.statusButtonLabel}>Deactivate student</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={handleReactivate}
+                  disabled={statusBusy}
+                  style={[styles.statusButton, styles.statusButtonActive, statusBusy && { opacity: 0.5 }]}
+                >
+                  <Text style={[styles.statusButtonLabel, styles.statusButtonLabelActive]}>
+                    Reactivate student
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           </MotiView>
 
           <MotiView {...rise(80)} style={styles.statRow}>
@@ -316,6 +371,19 @@ export function StudentProfileScreen({ studentId, onBack, onNewAssessment }: Stu
           </MotiView>
         </ScrollView>
       )}
+
+      <ConfirmModal
+        visible={confirmingDeactivate}
+        title="Deactivate this student?"
+        message={
+          student
+            ? `${student.full_name} will be hidden from the active roster and leaderboard, but can still sign in and use their own account. This can be undone from their profile.`
+            : ''
+        }
+        confirmLabel="Deactivate"
+        onConfirm={handleDeactivate}
+        onCancel={() => setConfirmingDeactivate(false)}
+      />
     </View>
   );
 }
@@ -385,6 +453,22 @@ const styles = StyleSheet.create({
   scoreLabel: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 1.6, color: '#9BA3A7', marginBottom: 4 },
   scoreValue: { fontFamily: fonts.displayBold, fontSize: 30, color: '#E11919' },
   scoreValueSmall: { fontFamily: fonts.displayBold, fontSize: 24 },
+  statusRow: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    paddingTop: 14,
+  },
+  statusButton: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(225,25,25,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusButtonActive: { borderColor: 'rgba(52,211,153,0.35)' },
+  statusButtonLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: '#E11919' },
+  statusButtonLabelActive: { color: '#34d399' },
   // No `gap` and no `flex: 1` here on purpose: that combination collapses
   // row children on Android. Widths are set explicitly at the call site.
   statRow: { flexDirection: 'row' },
