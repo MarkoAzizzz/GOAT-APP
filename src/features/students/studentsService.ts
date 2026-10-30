@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '../../lib/api';
+import { apiGet, apiPatch, apiPost, apiDelete } from '../../lib/api';
 
 export type Student = {
   id: string;
@@ -16,6 +16,19 @@ export type Student = {
   last_assessment_date: string | null;
   created_at: string;
 };
+
+// Calendar-month cutoff (not a rolling 30 days) — resets on the 1st. Shared
+// so "assessed" always means the same thing everywhere it's counted; two
+// separate definitions is how Home's count and the Score tab's "Not
+// assessed" filter drifted apart from each other.
+export function currentMonthStartISO(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+export function isAssessedThisMonth(student: Pick<Student, 'last_assessment_date'>): boolean {
+  return !!student.last_assessment_date && student.last_assessment_date >= currentMonthStartISO();
+}
 
 export type Branch = {
   id: string;
@@ -92,6 +105,23 @@ export function getBranches(accessToken: string): Promise<Branch[]> {
   return apiGet<Branch[]>('/students/branches/', accessToken);
 }
 
+export function createBranch(
+  accessToken: string,
+  payload: { name: string; location: string }
+): Promise<Branch> {
+  return apiPost<Branch>('/students/branches/', payload, accessToken);
+}
+
 export function createStudent(accessToken: string, payload: CreateStudentPayload): Promise<Student> {
   return apiPost<Student>('/students/', payload, accessToken);
+}
+
+/** Soft-delete: hides the student from the active roster/leaderboard and
+ * disables their login, but keeps all their history intact. */
+export function deactivateStudent(accessToken: string, id: string): Promise<void> {
+  return apiDelete<void>(`/students/${id}/`, accessToken);
+}
+
+export function reactivateStudent(accessToken: string, id: string): Promise<Student> {
+  return apiPatch<Student>(`/students/${id}/`, { is_active: true }, accessToken);
 }
