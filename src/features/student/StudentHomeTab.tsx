@@ -1,12 +1,19 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { fonts } from '../../theme/fonts';
 import { StudentSelf } from './useStudentSelf';
 import { SIGN_OUT_CLEARANCE } from '../../components/SignOutButton';
-import { PackageBanner } from '../packages/PackageBanner';
+import { SessionsRing } from '../packages/SessionsRing';
 
 const RISE_EASING = Easing.bezier(0.16, 0.84, 0.44, 1);
 const RED = '#E11919';
@@ -17,8 +24,10 @@ const GAIN = '#10b981';
 const MASCOT_ASPECT = 1176 / 1338;
 const MASCOT_TOP = 40;
 /** How far down the mascot the title sits. Lower = everything shifts up,
- * which is what buys room for the coach note above the tab bar. */
-const TITLE_AT = 0.58;
+ * which is what buys room for the cards above the tab bar. Lowered when the
+ * sessions ring was added; below about 0.40 the title rides into the
+ * mascot's face. */
+const TITLE_AT = 0.48;
 
 function rise(delay: number) {
   return {
@@ -95,9 +104,14 @@ export function StudentHomeTab({ self }: { self: StudentSelf }) {
         <Text style={styles.title}>This week</Text>
       </MotiView>
 
-      <View style={styles.body}>
-        {/* Above the streak: running out of sessions outranks a streak. */}
-        <PackageBanner sessionPackage={self.sessionPackage} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
+        <MotiView {...rise(40)}>
+          <SessionsRing sessionPackage={self.sessionPackage} />
+        </MotiView>
 
         {streak > 0 ? (
           <MotiView {...rise(60)} style={styles.streakCard}>
@@ -143,12 +157,22 @@ export function StudentHomeTab({ self }: { self: StudentSelf }) {
           </View>
         </MotiView>
 
-        {latest?.coach_notes ? (
+        {latest?.coach_notes || latest?.action_plan ? (
           <MotiView {...rise(220)} style={styles.noteCard}>
-            <Text style={styles.noteLabel}>
-              COACH NOTE · {formatDate(latest.assessment_date).toUpperCase()}
-            </Text>
-            <Text style={styles.noteBody}>“{latest.coach_notes}”</Text>
+            {latest.coach_notes ? (
+              <>
+                <Text style={styles.noteLabel}>COACH NOTES</Text>
+                <Text style={styles.noteBody}>{latest.coach_notes}</Text>
+              </>
+            ) : null}
+            {latest.action_plan ? (
+              <>
+                <Text style={[styles.noteLabel, latest.coach_notes && { marginTop: 10 }]}>
+                  ACTION PLAN
+                </Text>
+                <Text style={styles.noteBody}>{latest.action_plan}</Text>
+              </>
+            ) : null}
           </MotiView>
         ) : null}
 
@@ -161,7 +185,7 @@ export function StudentHomeTab({ self }: { self: StudentSelf }) {
             </Text>
           </MotiView>
         ) : null}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -169,9 +193,8 @@ export function StudentHomeTab({ self }: { self: StudentSelf }) {
 const styles = StyleSheet.create({
   centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   errorText: { fontFamily: fonts.body, fontSize: 14, color: '#9BA3A7' },
-  // Fixed screen, not a scroll view: Home is a glance, and everything is
-  // sized to fit between the mascot and the tab bar.
-  screen: { flex: 1, paddingBottom: 16 },
+  screen: { flex: 1 },
+  scroll: { flex: 1 },
 
   // No mascot of its own: the single shared GoatMascotBackdrop shows through
   // from RootAuthScreen, exactly as it does on the admin side. The top
@@ -180,7 +203,7 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: fonts.body, fontSize: 12.5, color: '#9BA3A7' },
   title: { fontFamily: fonts.displayBold, fontSize: 34, color: '#F5F5F5' },
 
-  body: { paddingHorizontal: 24, paddingTop: 20, gap: 16 },
+  body: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32, gap: 16 },
 
   streakCard: {
     flexDirection: 'row',
