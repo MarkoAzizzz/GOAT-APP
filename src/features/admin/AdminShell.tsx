@@ -13,6 +13,7 @@ import { MoreTab } from './MoreTab';
 import { ADMIN_TABS, AdminTabKey } from './adminTabIcons';
 import { StudentProfileScreen } from '../students/StudentProfileScreen';
 import { SignOutButton } from '../../components/SignOutButton';
+import type { PickerFilter } from './ScoreTab';
 
 const SLIDE_EASING = Easing.bezier(0.2, 0.8, 0.2, 1);
 
@@ -21,6 +22,7 @@ function renderTab(
   goTo: (t: AdminTabKey) => void,
   onSelectStudent: (id: string) => void,
   scoreStudentId: string | null,
+  scoreInitialFilter: PickerFilter,
   onStartScoring: () => void,
   onScoreDirtyChange: (dirty: boolean) => void
 ) {
@@ -39,6 +41,7 @@ function renderTab(
       return (
         <ScoreTab
           initialStudentId={scoreStudentId}
+          initialFilter={scoreInitialFilter}
           onExitToHome={() => goTo('home')}
           onDirtyChange={onScoreDirtyChange}
         />
@@ -63,6 +66,7 @@ export function AdminShell() {
   const [dir, setDir] = useState(1);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [scoreStudentId, setScoreStudentId] = useState<string | null>(null);
+  const [scoreInitialFilter, setScoreInitialFilter] = useState<PickerFilter>('all');
   const scoreDirtyRef = useRef(false);
   const [pendingLeaveScore, setPendingLeaveScore] = useState<AdminTabKey | null>(null);
 
@@ -76,9 +80,11 @@ export function AdminShell() {
   };
 
   // "Start scoring" from Home has no student in mind — always starts at the
-  // picker. A profile's "New assessment" preselects that specific student.
+  // picker, pre-filtered to who still needs it this month. A profile's "New
+  // assessment" preselects that specific student instead.
   const startScoring = () => {
     setScoreStudentId(null);
+    setScoreInitialFilter('not_assessed');
     goTo('score');
   };
 
@@ -96,7 +102,10 @@ export function AdminShell() {
       setPendingLeaveScore(next);
       return;
     }
-    if (next === 'score') setScoreStudentId(null);
+    if (next === 'score') {
+      setScoreStudentId(null);
+      setScoreInitialFilter('all');
+    }
     goTo(next);
   };
 
@@ -120,9 +129,17 @@ export function AdminShell() {
           transition={{ type: 'timing', duration: 360, easing: SLIDE_EASING }}
           style={{ flex: 1 }}
         >
-          {renderTab(tab, goTo, setSelectedStudentId, scoreStudentId, startScoring, (dirty) => {
-            scoreDirtyRef.current = dirty;
-          })}
+          {renderTab(
+            tab,
+            goTo,
+            setSelectedStudentId,
+            scoreStudentId,
+            scoreInitialFilter,
+            startScoring,
+            (dirty) => {
+              scoreDirtyRef.current = dirty;
+            }
+          )}
         </MotiView>
       </View>
 

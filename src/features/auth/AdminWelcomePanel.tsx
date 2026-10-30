@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
 import { Easing } from 'react-native-reanimated';
 import { WipeReveal } from '../../components/WipeReveal';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from './AuthContext';
+import { getStudents, isAssessedThisMonth } from '../students/studentsService';
+import { getLeaderboard } from '../leaderboard/leaderboardService';
 
 const RISE_EASING = Easing.bezier(0.16, 0.84, 0.44, 1);
 
@@ -36,13 +38,40 @@ type AdminWelcomePanelProps = {
  * react-native-web, so keeping them as siblings avoids an accidental
  * fall-through into the dashboard when the user meant to log out.
  *
- * TEAM / ASSESSED / IMPROVEMENT are illustrative placeholders (matching the
- * Home tab's mocked "Assessed 7/10" card) — there's no summary endpoint yet
- * for team size or weekly average improvement.
+ * TEAM / ASSESSED / AVG CHANGE reuse the same roster + leaderboard calls
+ * Home makes, so this screen never disagrees with the numbers one tap away
+ * from it. "Assessed" uses the same calendar-month cutoff as the Score
+ * tab's "Not assessed" filter — see isAssessedThisMonth.
  */
 export function AdminWelcomePanel({ onContinue }: AdminWelcomePanelProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, accessToken } = useAuth();
   const name = user?.full_name || 'coach';
+
+  const [teamCount, setTeamCount] = useState<number | null>(null);
+  const [assessedCount, setAssessedCount] = useState<number | null>(null);
+  const [avgChange, setAvgChange] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    getStudents(accessToken)
+      .then((students) => {
+        const active = students.filter((s) => s.is_active);
+        setTeamCount(active.length);
+        setAssessedCount(active.filter(isAssessedThisMonth).length);
+      })
+      .catch(() => {
+        setTeamCount(null);
+        setAssessedCount(null);
+      });
+    getLeaderboard(accessToken)
+      .then((entries) => {
+        const changes = entries
+          .map((e) => (e.rating_change == null ? null : parseFloat(e.rating_change)))
+          .filter((n): n is number => n != null);
+        setAvgChange(changes.length ? changes.reduce((a, b) => a + b, 0) / changes.length : null);
+      })
+      .catch(() => setAvgChange(null));
+  }, [accessToken]);
 
   return (
     <View style={styles.root}>
@@ -59,18 +88,28 @@ export function AdminWelcomePanel({ onContinue }: AdminWelcomePanelProps) {
         <View style={styles.statRow}>
           <MotiView {...slam(480)} style={styles.statCard}>
             <Text style={styles.statLabel} numberOfLines={1}>TEAM</Text>
-            <Text style={styles.statValue} numberOfLines={1}>24</Text>
+            <Text style={styles.statValue} numberOfLines={1}>{teamCount ?? '—'}</Text>
             <Text style={styles.statSub} numberOfLines={1}>students</Text>
           </MotiView>
           <MotiView {...slam(560)} style={styles.statCard}>
             <Text style={styles.statLabel} numberOfLines={1}>ASSESSED</Text>
-            <Text style={styles.statValue} numberOfLines={1}>7/10</Text>
-            <Text style={styles.statSub} numberOfLines={1}>this week</Text>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {assessedCount ?? '—'}/{teamCount ?? '—'}
+            </Text>
+            <Text style={styles.statSub} numberOfLines={1}>this month</Text>
           </MotiView>
           <MotiView {...slam(640)} style={styles.statCard}>
-            <Text style={styles.statLabel} numberOfLines={1}>AVG IMP</Text>
-            <Text style={[styles.statValue, { color: '#10b981' }]} numberOfLines={1}>+4.2%</Text>
-            <Text style={styles.statSub} numberOfLines={1}>vs last wk</Text>
+            <Text style={styles.statLabel} numberOfLines={1}>AVG CHANGE</Text>
+            <Text
+              style={[
+                styles.statValue,
+                { color: avgChange == null ? '#F5F5F5' : avgChange >= 0 ? '#10b981' : '#E11919' },
+              ]}
+              numberOfLines={1}
+            >
+              {avgChange == null ? '—' : `${avgChange > 0 ? '+' : ''}${avgChange.toFixed(1)}`}
+            </Text>
+            <Text style={styles.statSub} numberOfLines={1}>latest session</Text>
           </MotiView>
         </View>
 

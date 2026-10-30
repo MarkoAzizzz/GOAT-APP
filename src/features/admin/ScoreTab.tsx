@@ -15,7 +15,7 @@ import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../../lib/api';
 import { ConfirmModal } from '../../components/ConfirmModal';
-import { getStudents, getStudent, Student } from '../students/studentsService';
+import { getStudents, getStudent, isAssessedThisMonth, Student } from '../students/studentsService';
 import { SIGN_OUT_CLEARANCE } from '../../components/SignOutButton';
 import {
   getAssessmentTemplate,
@@ -83,7 +83,7 @@ function deltaColor(v: number | undefined) {
 }
 
 type Step = 'pick' | 'score' | 'review' | 'success';
-type PickerFilter = 'all' | 'boxing' | 'kickboxing' | 'not_assessed';
+export type PickerFilter = 'all' | 'boxing' | 'kickboxing' | 'not_assessed';
 
 const PICKER_FILTERS: { key: PickerFilter; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -91,12 +91,6 @@ const PICKER_FILTERS: { key: PickerFilter; label: string }[] = [
   { key: 'kickboxing', label: 'Kickboxing' },
   { key: 'not_assessed', label: 'Not assessed' },
 ];
-
-// Calendar-month cutoff (not a rolling 30 days) — resets on the 1st.
-function currentMonthStartISO() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-}
 
 type PendingConfirm = {
   title: string;
@@ -107,6 +101,7 @@ type PendingConfirm = {
 
 type ScoreTabProps = {
   initialStudentId: string | null;
+  initialFilter?: PickerFilter;
   onExitToHome: () => void;
   onDirtyChange?: (dirty: boolean) => void;
 };
@@ -118,7 +113,12 @@ type ScoreTabProps = {
  * system's scoring UX. Pillars and criteria are fetched live from
  * /assessments/template/, never hardcoded.
  */
-export function ScoreTab({ initialStudentId, onExitToHome, onDirtyChange }: ScoreTabProps) {
+export function ScoreTab({
+  initialStudentId,
+  initialFilter = 'all',
+  onExitToHome,
+  onDirtyChange,
+}: ScoreTabProps) {
   const { accessToken, user } = useAuth();
 
   const [step, setStep] = useState<Step>(initialStudentId ? 'score' : 'pick');
@@ -126,7 +126,7 @@ export function ScoreTab({ initialStudentId, onExitToHome, onDirtyChange }: Scor
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [query, setQuery] = useState('');
-  const [pickerFilter, setPickerFilter] = useState<PickerFilter>('all');
+  const [pickerFilter, setPickerFilter] = useState<PickerFilter>(initialFilter);
 
   const [template, setTemplate] = useState<AssessmentTemplate | null>(null);
   const [templateError, setTemplateError] = useState(false);
@@ -148,7 +148,9 @@ export function ScoreTab({ initialStudentId, onExitToHome, onDirtyChange }: Scor
     if (!accessToken || step !== 'pick') return;
     setStudentsLoading(true);
     getStudents(accessToken)
-      .then(setAllStudents)
+      // A deactivated student can't be picked here — they're off the
+      // roster, not just hidden from the leaderboard.
+      .then((students) => setAllStudents(students.filter((s) => s.is_active)))
       .catch(() => setAllStudents([]))
       .finally(() => setStudentsLoading(false));
   }, [accessToken, step]);
@@ -185,11 +187,10 @@ export function ScoreTab({ initialStudentId, onExitToHome, onDirtyChange }: Scor
 
   const filteredStudents = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const monthStart = currentMonthStartISO();
     return allStudents.filter((s) => {
       if (pickerFilter === 'boxing' && s.sport !== 'boxing') return false;
       if (pickerFilter === 'kickboxing' && s.sport !== 'kickboxing') return false;
-      if (pickerFilter === 'not_assessed' && s.last_assessment_date && s.last_assessment_date >= monthStart) return false;
+      if (pickerFilter === 'not_assessed' && isAssessedThisMonth(s)) return false;
       if (q && !s.full_name.toLowerCase().includes(q) && !s.student_id.toLowerCase().includes(q)) return false;
       return true;
     });

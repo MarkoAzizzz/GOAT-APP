@@ -5,6 +5,7 @@ import { Easing } from 'react-native-reanimated';
 import { fonts } from '../../theme/fonts';
 import { useAuth } from '../auth/AuthContext';
 import { getLeaderboard, LeaderboardEntry } from '../leaderboard/leaderboardService';
+import { getStudents, isAssessedThisMonth } from '../students/studentsService';
 
 const RISE_EASING = Easing.bezier(0.16, 0.84, 0.44, 1);
 
@@ -25,6 +26,13 @@ function initials(name: string) {
     .join('');
 }
 
+function formatToday() {
+  const now = new Date();
+  const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const month = now.toLocaleDateString('en-US', { month: 'long' });
+  return `${weekday}, ${now.getDate()} ${month}`;
+}
+
 type AdminHomeTabProps = {
   onStartScoring: () => void;
   onOpenBoard: () => void;
@@ -32,27 +40,46 @@ type AdminHomeTabProps = {
 };
 
 /**
- * "Assessed 7/10" and "3 students left before Sunday" are illustrative
- * placeholders — there's no backend endpoint yet for a weekly
- * assessed-vs-roster count. Top movers below is real data from the
- * leaderboard endpoint, sorted by improvement (its natural ordering).
+ * "Assessed" count uses the exact same calendar-month cutoff as the Score
+ * tab's "Not assessed" filter (isAssessedThisMonth) — sharing the predicate
+ * is what keeps these two screens from disagreeing with each other. Top
+ * movers is real data from the leaderboard endpoint, sorted by improvement
+ * (its natural ordering).
  */
 export function AdminHomeTab({ onStartScoring, onOpenBoard, onSelectStudent }: AdminHomeTabProps) {
   const { accessToken } = useAuth();
   const [movers, setMovers] = useState<LeaderboardEntry[]>([]);
+  const [assessedCount, setAssessedCount] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
     getLeaderboard(accessToken)
       .then((entries) => setMovers(entries.slice(0, 3)))
       .catch(() => setMovers([]));
+    getStudents(accessToken)
+      .then((students) => {
+        // Deactivated students don't belong in either side of this ratio —
+        // they're not expected to be assessed, and shouldn't inflate the
+        // "left to do" count either.
+        const active = students.filter((s) => s.is_active);
+        setTotalCount(active.length);
+        setAssessedCount(active.filter(isAssessedThisMonth).length);
+      })
+      .catch(() => {
+        setTotalCount(null);
+        setAssessedCount(null);
+      });
   }, [accessToken]);
+
+  const remaining = totalCount != null && assessedCount != null ? totalCount - assessedCount : null;
+  const progressRatio = totalCount ? (assessedCount ?? 0) / totalCount : 0;
 
   return (
     <View style={styles.container}>
       <MotiView {...rise(0)} style={styles.headerRow}>
         <View style={{ gap: 2 }}>
-          <Text style={styles.eyebrow}>Week 14 · Main branch</Text>
+          <Text style={styles.eyebrow}>{formatToday()}</Text>
           <Text style={styles.title}>This week</Text>
         </View>
       </MotiView>
@@ -60,18 +87,20 @@ export function AdminHomeTab({ onStartScoring, onOpenBoard, onSelectStudent }: A
       <MotiView {...rise(60)} style={styles.progressCard}>
         <View style={styles.progressTop}>
           <View style={{ gap: 4 }}>
-            <Text style={styles.progressLabel}>ASSESSED</Text>
+            <Text style={styles.progressLabel}>ASSESSED THIS MONTH</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-              <Text style={styles.progressValue}>7</Text>
-              <Text style={styles.progressOf}>/ 10</Text>
+              <Text style={styles.progressValue}>{assessedCount ?? '—'}</Text>
+              <Text style={styles.progressOf}>/ {totalCount ?? '—'}</Text>
             </View>
           </View>
-          <Text style={styles.progressNote}>3 students left{'\n'}before Sunday</Text>
+          <Text style={styles.progressNote}>
+            {remaining != null ? `${remaining} student${remaining === 1 ? '' : 's'} left` : ''}
+          </Text>
         </View>
         <View style={styles.progressTrack}>
           <MotiView
             from={{ width: '0%' }}
-            animate={{ width: '70%' }}
+            animate={{ width: `${Math.round(progressRatio * 100)}%` }}
             transition={{ type: 'timing', duration: 620, delay: 220, easing: Easing.bezier(0.2, 0.8, 0.2, 1) }}
             style={styles.progressFill}
           />
